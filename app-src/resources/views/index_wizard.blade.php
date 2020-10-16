@@ -390,6 +390,9 @@
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
         <script type="text/javascript">
+        
+          //========================================================================================
+          // Document Loaded, process DOM
           jQuery(document).ready(function() {
             
             //========================================================================================
@@ -404,6 +407,48 @@
                 manifest: []
               }
             });
+
+            //========================================================================================
+            // License vSphere Edition License Count Calculation
+            function calculateVSphereLicenseCount(clusterID) {
+              if (!clusterID) {clusterID = jQuery("#licenseClusterID").val(); }
+              if (clusterID) {
+                cluster = app.clustersAndHosts[clusterID];
+                infra = app.infrastructure[cluster['infrastructureProvider']];
+                switch(infra['version']) {
+                  case "7":
+                  case 7:
+                    var vSphereCount = Math.ceil((cluster['hostCount'] * cluster['hostSocketCount'] * cluster['hostCoresPerSocketCount']) / 32);
+                  break;
+                }
+                jQuery("#vSphereCount").val(vSphereCount);
+                return vSphereCount;
+              }
+            }
+
+            //========================================================================================
+            // License vCenter License Count Calculation Function
+            function calculateVCenterLicenseCount(clusterID, vCenterEdition) {
+              clusterID = (typeof clusterID !== 'undefined') ? parseInt(clusterID) : jQuery("#licenseClusterID").val();
+              vCenterEdition = (typeof vCenterEdition !== 'undefined') ? vCenterEdition : jQuery("#vCenterEdition").val();
+              console.log('clusterID: ' +clusterID);
+              console.log('vCenterEdition: ' +vCenterEdition);
+              if (clusterID && vCenterEdition) {
+                cluster = app.clustersAndHosts[clusterID];
+                //infra = app.infrastructure[cluster['infrastructureProvider']];
+                switch(vCenterEdition) {
+                  case "standard":
+                    var vCenterCount = Math.ceil(cluster['hostCount'] / 2000);
+                  break;
+                  case "foundation":
+                    var vCenterCount = Math.ceil(cluster['hostCount'] / 4);
+                  break;
+                }
+                jQuery("#vCenterCount").val(vCenterCount);
+                console.log('vCenterCount: ' +vCenterCount);
+                return vCenterCount;
+              }
+            }
             
             //========================================================================================
             // Demo Data Injection
@@ -601,21 +646,6 @@
 
             //========================================================================================
             // License vSphere Edition License Count Calculation
-            function calculateVSphereLicenseCount(clusterID = null) {
-              if (!clusterID) {clusterID = jQuery("#licenseClusterID").val(); }
-              if (clusterID) {
-                cluster = app.clustersAndHosts[clusterID];
-                infra = app.infrastructure[cluster['infrastructureProvider']];
-                switch(infra['version']) {
-                  case "7":
-                  case 7:
-                    var vSphereCount = Math.ceil((cluster['hostCount'] * cluster['hostSocketCount'] * cluster['hostCoresPerSocketCount']) / 32);
-                  break;
-                }
-                jQuery("#vSphereCount").val(vSphereCount);
-                return vSphereCount;
-              }
-            }
             jQuery("#licensesModalCenter").on('click', '#calculateVSphereCount', function(e) {
               e.preventDefault();
               calculateVSphereLicenseCount();
@@ -623,28 +653,13 @@
 
             //========================================================================================
             // License vCenter License Count Calculation
-            function calculateVCenterLicenseCount(clusterID = null, vCenterEdition = null) {
-              if (!clusterID) {clusterID = jQuery("#licenseClusterID").val(); }
-              if (!vCenterEdition) {vCenterEdition = jQuery("#vCenterEdition").val();}
-              if (clusterID && vCenterEdition) {
-                cluster = app.clustersAndHosts[clusterID];
-                infra = app.infrastructure[cluster['infrastructureProvider']];
-                switch(vCenterEdition) {
-                  case "standard":
-                    var vCenterCount = Math.ceil(cluster['hostCount'] / 2000);
-                  break;
-                  case "foundation":
-                    var vCenterCount = Math.ceil(cluster['hostCount'] / 4);
-                  break;
-                }
-                jQuery("#vCenterCount").val(vCenterCount);
-                return vCenterCount;
-              }
-            }
             jQuery("#licensesModalCenter").on('click', '#calculateVCenterCount', function(e) {
               e.preventDefault();
               calculateVCenterLicenseCount();
             });
+
+            //========================================================================================
+            // Add License
             
             //========================================================================================
             // Disable default submits on subforms
