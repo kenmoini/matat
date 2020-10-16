@@ -127,6 +127,29 @@
         <h4 class="mb-3">3) Licenses
           <span class="pull-right" v-if="clustersAndHosts.length"><button class="btn btn-outline" type="button" data-toggle="modal" data-target="#licensesModalCenter"><i class="fa fa-plus"></i></span>
         </h4>
+        <table class="table table-striped table-hover" v-if="licenses.length">
+            <thead>
+              <tr>
+                <th>Name & Cluster</th>
+                <th>Count</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(license, index) in licenses">
+                <td>
+                  <strong>@{{ license.name }}</strong><br />
+                  <span class="text-muted small">@{{ clustersAndHosts[license.clusterID].friendlyName }}</span><br />
+                </td>
+                <td>
+                  @{{ license.total_licenses }}
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-danger rmlicense" :data-index="index"><i class="fa fa-trash"></i></button>
+                </td>
+              </tr>
+            </tbody>
+        </table>
         <hr class="mb-4">
 
         <h4 class="mb-3">4) VMs & Workloads
@@ -303,13 +326,13 @@
                 <select id="vSphereEdition" name="vSphereEdition" class="form-control">
                   <option value="">Select an edition...</option>
                   <option value="standard">Standard</option>
-                  <option value="enterprisePlus">Enterprise Plus</option>
-                  <option value="roboStandard" disabled>ROBO Standard</option>
-                  <option value="roboAdvanced" disabled>ROBO Advanced</option>
-                  <option value="essentialsKit" disabled>Essentials Kit</option>
-                  <option value="essentialsPlusKit" disabled>Essentials Plus Kit</option>
-                  <option value="standardAccelerationKit" disabled>Standard Acceleration Kit</option>
-                  <option value="enterprisePlusAccelerationKit" disabled>Enterprise Plus Acceleration Kit</option>
+                  <option value="enterprise_plus">Enterprise Plus</option>
+                  <option value="robo_standard" disabled>ROBO Standard</option>
+                  <option value="robo_advanced" disabled>ROBO Advanced</option>
+                  <option value="essentials_kit" disabled>Essentials Kit</option>
+                  <option value="essentials_plus_kit" disabled>Essentials Plus Kit</option>
+                  <option value="standard_acceleration_kit" disabled>Standard Acceleration Kit</option>
+                  <option value="enterprise_plus_acceleration_kit" disabled>Enterprise Plus Acceleration Kit</option>
                 </select>
               </div>
               <div class="col">
@@ -355,7 +378,7 @@
                   <option value="standard">vSAN Standard</option>
                   <option value="advanced">vSAN Advanced</option>
                   <option value="enterprise">vSAN Enterprise</option>
-                  <option value="enterprisePlus">vSAN Enterprise Plus</option>
+                  <option value="enterprise_plus">vSAN Enterprise Plus</option>
                 </select>
               </div>
               <div class="col">
@@ -374,7 +397,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" id="addInfraType" class="btn btn-primary">Add</button>
+          <button type="button" id="addLicenses" class="btn btn-primary">Add</button>
         </div>
       </div>
     </div>
@@ -390,7 +413,32 @@
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
         <script type="text/javascript">
-        
+          //========================================================================================
+          // Intializing variables and functions
+          var startingIndex = 1000000000000;
+
+          function randomString(length) {
+              var stringGen = Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
+              return stringGen.toUpperCase();
+          }
+          function fakeVMWareLicenseKeyGenerator() {
+            return randomString(5) + '-' + randomString(5) + '-' + randomString(5) + '-' + randomString(5) + '-' + randomString(5); 
+          }
+          const capitalize = (s) => {
+            if (typeof s !== 'string') return ''
+            return s.charAt(0).toUpperCase() + s.slice(1)
+          }
+          function makeTitle(slug) {
+            var words = slug.split('_');
+
+            for (var i = 0; i < words.length; i++) {
+              var word = words[i];
+              words[i] = word.charAt(0).toUpperCase() + word.slice(1);
+            }
+
+            return words.join(' ');
+          }
+
           //========================================================================================
           // Document Loaded, process DOM
           jQuery(document).ready(function() {
@@ -466,7 +514,7 @@
               var infraIndex = app.infrastructure.push({ typeName: 'VMWare vSphere', version: 7, friendlyName: "Nashville DC - " + curInfraCount }) - 1;
 
               // Clusters
-              app.clustersAndHosts.push({
+              var clusterIndex = app.clustersAndHosts.push({
                   friendlyName: "Production Cluster " + (infraIndex + 1),
                   infrastructureProvider: infraIndex,
                   clusterBaseDNSName: "prod" + (infraIndex + 1) + ".example.com",
@@ -487,7 +535,25 @@
                     },
                   ],
                   totalStorageSize: 50000
-                });
+              }) - 1;
+
+              app.licenses.push({
+                ems_ref: fakeVMWareLicenseKeyGenerator(),
+                name: "VMWare vSphere 7 Enterprise Plus",
+                license_edition: "esx.enterprisePlus.cpuPackageCoreLimited",
+                total_licenses: 24,
+                used_licenses: 24,
+                clusterID: clusterIndex
+              });
+              app.licenses.push({
+                ems_ref: fakeVMWareLicenseKeyGenerator(),
+                name: "VMware vCenter Server 7 Standard",
+                license_edition: "vc.standard.instance",
+                total_licenses: 1,
+                used_licenses: 1,
+                clusterID: clusterIndex
+              });
+              
             });
             
             //========================================================================================
@@ -660,6 +726,45 @@
 
             //========================================================================================
             // Add License
+            jQuery("#licensesModalCenter").on('click', "#addLicenses", function(e) {
+              e.preventDefault();
+              let validForm = true;
+              if (
+                !jQuery("#licenseClusterID").val() ||
+                !jQuery("#vSphereEdition").val() || !jQuery("#vSphereCount").val() ||
+                !jQuery("#vCenterEdition").val() || !jQuery("#vCenterCount").val()
+              ) {
+                validForm = false;
+              }
+              else {
+
+                let clusterID = jQuery("#licenseClusterID").val();
+                cluster = app.clustersAndHosts[clusterID];
+                infra = app.infrastructure[cluster['infrastructureProvider']];
+                switch(infra['typeName']) {
+                  case "VMWare vSphere":
+                    app.licenses.push({
+                      ems_ref: fakeVMWareLicenseKeyGenerator(),
+                      name: "VMWare vSphere " + infra['version'] + " " + capitalize(makeTitle(jQuery("#vSphereEdition").val())),
+                      license_edition: "esx.enterprisePlus.cpuPackageCoreLimited",
+                      total_licenses: jQuery("#vSphereCount").val(),
+                      used_licenses: jQuery("#vSphereCount").val(),
+                      clusterID: clusterID
+                    });
+                    app.licenses.push({
+                      ems_ref: fakeVMWareLicenseKeyGenerator(),
+                      name: "VMware vCenter Server " + infra['version'] + "  " + capitalize(makeTitle(jQuery("#vCenterEdition").val())),
+                      license_edition: "vc.standard.instance",
+                      total_licenses: jQuery("#vCenterCount").val(),
+                      used_licenses: jQuery("#vCenterCount").val(),
+                      clusterID: clusterID
+                    });
+                  break;
+                }
+                jQuery("#addLicenseForm").trigger("reset");
+                jQuery("#licensesModalCenter").modal('hide');
+              }
+            });
             
             //========================================================================================
             // Disable default submits on subforms

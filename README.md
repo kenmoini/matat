@@ -22,3 +22,18 @@ That is way too much work.  Instead, why not just ask:
 - VM Count/Distribution
 
 Which will provide a pretty close estimate of the value the Migration Analytics Toolkit can provide.
+
+## Deployment
+
+I don't know why this is a Laravel application outside of it being my comfort zone - so, suck it.
+
+```bash
+cd app-src
+composer install
+npm install
+npm run dev
+cp .env.example .env
+php artisan key:generate
+```
+
+Run with `php artisan serve` and access at `http://localhost:8000` or deploy with Nginx/PHP and target the `app-src/public` as the document root.
