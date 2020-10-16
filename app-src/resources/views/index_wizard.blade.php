@@ -101,19 +101,21 @@
               <tr>
                 <th>Name</th>
                 <th>Hosts</th>
-                <th>Base DNS</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(cluster, index) in clustersAndHosts">
-                <td>@{{ cluster.friendlyName }}</td>
                 <td>
-                  <strong>@{{ cluster.hostCount }} Hosts</strong><br />
-                  <span class="text-small">@{{ cluster.hostSocketCount }} Sockets / @{{ cluster.hostCoresPerSocketCount }} Cores each</span><br />
-                  <span class="text-small">@{{ cluster.hostRAM }}GB RAM w/ @{{ cluster.totalStorageSize }}GB Total Storage</span>
+                  <strong>@{{ cluster.friendlyName }}</strong><br />
+                  <span class="text-muted small">@{{ cluster.clusterBaseDNSName }}</span><br />
+                  <span class="small">@{{ cluster.totalStorageSize }}GB Total Storage</span>
                 </td>
-                <td>@{{ cluster.clusterBaseDNSName }}</td>
+                <td>
+                  <strong>@{{ cluster.hostCount }} Hosts on @{{ infrastructure[cluster.infrastructureProvider].friendlyName }}</strong><br />
+                  <span class="text-muted small">@{{ cluster.hostSocketCount }} Sockets / @{{ cluster.hostCoresPerSocketCount }} Cores each</span><br />
+                  <span class="small">@{{ cluster.hostRAM }}GB RAM each</span>
+                </td>
                 <td>
                   <button class="btn btn-sm btn-danger rmCluster" :data-index="index"><i class="fa fa-trash"></i></button>
                 </td>
@@ -138,13 +140,14 @@
   </div>
 
   <footer class="my-5 pt-5 text-muted text-center text-small">
-    <p class="mb-1">Copyleft 2020 <a href="https://polyglot.ventures">Polyglot Ventures</a> - Respective Trademarks owned by <a href="https://redhat.com">Red Hat</a></p>
+    <p class="mb-1">Copyleft 2020 <a href="https://polyglot.ventures">Polyglot Ventures</a> - Respective Trademarks owned by <a href="https://redhat.com">Red Hat</a> and <a href="https://vmware.com">VMWare</a></p>
+    <p><a href="#" id="demoDataInjection">Demo Data Injection</a></p>
   </footer>
 
   <!-- Modals -->
   <!-- Add Infrastructure Modal -->
   <div class="modal fade" id="infraModalCenter" tabindex="-1" role="dialog" aria-labelledby="infraModalCenterTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="infraModalCenterTitle">Add Infrastructure</h5>
@@ -187,7 +190,7 @@
   </div>
   <!-- Add Clusters and Hosts Modal -->
   <div class="modal fade" id="clustersModalCenter" tabindex="-1" role="dialog" aria-labelledby="clustersModalCenterTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="clustersModalCenterTitle">Add Clusters & Hosts</h5>
@@ -198,6 +201,15 @@
         <div class="modal-body">
           <form id="addClusterForm" name="addClusterForm" method="POST" action="">
             <div class="form-group">
+              <label for="clusterInfrastructureID">Infrastructure Provider</label>
+              <select id="clusterInfrastructureID" name="clusterInfrastructureID" class="form-control">
+                <option value="">Select a infrastructure provider...</option>
+                <option v-for="(infra, index) in infrastructure" :value="index">
+                  @{{ infra.typeName }} - @{{ infra.friendlyName }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
               <label for="clusterFriendlyName">Cluster Friendly Name</label>
               <input class="form-control" name="clusterFriendlyName" id="clusterFriendlyName" placeholder="Data Analytics Cluster" />
             </div>
@@ -206,21 +218,25 @@
               <input class="form-control" name="clusterBaseDNSName" id="clusterBaseDNSName" placeholder="da.example.com" />
             </div>
             <hr />
-            <div class="form-group">
-              <label for="clusterHostCount">Host Count</label>
-              <input type="number" class="form-control" id="clusterHostCount" name="clusterHostCount" min="1" step="1" />
+            <div class="form-group row">
+              <div class="col">
+                <label for="clusterHostCount">Host Count</label>
+                <input type="number" class="form-control" id="clusterHostCount" name="clusterHostCount" min="1" step="1" />
+              </div>
+              <div class="col">
+                <label for="clusterHostTotalRAM">Per Host RAM in GB</label>
+                <input type="number" class="form-control" id="clusterHostTotalRAM" name="clusterHostTotalRAM" />
+              </div>
             </div>
-            <div class="form-group">
-              <label for="clusterHostSocketCount">Per Host Socket Count</label>
-              <input type="number" class="form-control" id="clusterHostSocketCount" name="clusterHostSocketCount" min="1" step="1" />
-            </div>
-            <div class="form-group">
-              <label for="clusterHostCoresPerSocketCount">Per Host Cores Per Socket Count</label>
-              <input type="number" class="form-control" id="clusterHostCoresPerSocketCount" name="clusterHostCoresPerSocketCount" min="1" step="1" />
-            </div>
-            <div class="form-group">
-              <label for="clusterHostTotalRAM">Per Host Total RAM in GB</label>
-              <input type="number" class="form-control" id="clusterHostTotalRAM" name="clusterHostTotalRAM" />
+            <div class="form-group row">
+              <div class="col">
+                <label for="clusterHostSocketCount">Per Host Socket Count</label>
+                <input type="number" class="form-control" id="clusterHostSocketCount" name="clusterHostSocketCount" min="1" step="1" />
+              </div>
+              <div class="col">
+                <label for="clusterHostCoresPerSocketCount">Cores Per Socket</label>
+                <input type="number" class="form-control" id="clusterHostCoresPerSocketCount" name="clusterHostCoresPerSocketCount" min="1" step="1" />
+              </div>
             </div>
             <hr />
             <h5>
@@ -241,7 +257,7 @@
                 </div>
                 <div class="form-group row">
                   <div class="col">
-                    <input type="number" class="form-control storagePoolSize" id="clusterStoragePoolSize-0" name="clusterStoragePoolSize-0" placeholder="Size in GB" />
+                    <input type="number" class="form-control storagePoolSize" id="clusterStoragePoolSize-0" name="clusterStoragePoolSize-0" placeholder="Size in GB" min="1" step="1" />
                   </div>
                   <div class="col">
                     <input type="number" class="form-control storagePoolUsage" id="clusterStoragePoolUsage-0" name="clusterStoragePoolUsage-0" min="0" max="100" placeholder="Usage in %" />
@@ -258,6 +274,113 @@
       </div>
     </div>
   </div>
+  <!-- Add Licenses Modal -->
+  <div class="modal fade" id="licensesModalCenter" tabindex="-1" role="dialog" aria-labelledby="licenseModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="licenseModalCenterTitle">Add Licenses</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="addLicenseForm" name="addLicenseForm" method="POST" action="">
+            <!-- Cluster Selection -->
+            <div class="form-group">
+              <label for="licenseClusterID">Cluster</label>
+              <select id="licenseClusterID" name="licenseClusterID" class="form-control">
+                <option value="">Select a cluster...</option>
+                <option v-for="(cluster, index) in clustersAndHosts" :value="index">
+                  @{{ cluster.friendlyName }}
+                </option>
+              </select>
+            </div>
+            <!-- vSphere Level -->
+            <div class="form-group row vmWareLicenseHolders genLicenseHolders d-none">
+              <div class="col">
+                <label for="vSphereEdition">vSphere Editions</label>
+                <select id="vSphereEdition" name="vSphereEdition" class="form-control">
+                  <option value="">Select an edition...</option>
+                  <option value="standard">Standard</option>
+                  <option value="enterprisePlus">Enterprise Plus</option>
+                  <option value="roboStandard" disabled>ROBO Standard</option>
+                  <option value="roboAdvanced" disabled>ROBO Advanced</option>
+                  <option value="essentialsKit" disabled>Essentials Kit</option>
+                  <option value="essentialsPlusKit" disabled>Essentials Plus Kit</option>
+                  <option value="standardAccelerationKit" disabled>Standard Acceleration Kit</option>
+                  <option value="enterprisePlusAccelerationKit" disabled>Enterprise Plus Acceleration Kit</option>
+                </select>
+              </div>
+              <div class="col">
+                <label for="vSphereCount">License Count</label>
+                <div class="input-group">
+                  <input type="number" min="1" step="1" id="vSphereCount" name="vSphereCount" class="form-control" />
+                  <div class="input-group-append">
+                    <div class="input-group-button">
+                      <button type="button" class="btn btn-info" id="calculateVSphereCount">Calculate</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- vCenter Level -->
+            <div class="form-group row vmWareLicenseHolders genLicenseHolders d-none">
+              <div class="col">
+                <label for="vCenterEdition">vCenter Editions</label>
+                <select id="vCenterEdition" name="vCenterEdition" class="form-control">
+                  <option value="">Select an edition...</option>
+                  <option value="foundation">vCenter Server Foundation</option>
+                  <option value="standard">vCenter Server Standard</option>
+                </select>
+              </div>
+              <div class="col">
+                <label for="vCenterCount">License Count</label>
+                <div class="input-group">
+                  <input type="number" min="1" step="1" id="vCenterCount" name="vCenterCount" class="form-control" />
+                  <div class="input-group-append">
+                    <div class="input-group-button">
+                      <button type="button" class="btn btn-info" id="calculateVCenterCount">Calculate</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Additional License Count -->
+            <div class="form-group row vmWareLicenseHolders genLicenseHolders d-none">
+              <div class="col">
+                <label for="vSANEdition">Optional: vSAN Edition</label>
+                <select id="vSANEdition" name="vSANEdition" class="form-control" disabled>
+                  <option value="">Select an edition...</option>
+                  <option value="standard">vSAN Standard</option>
+                  <option value="advanced">vSAN Advanced</option>
+                  <option value="enterprise">vSAN Enterprise</option>
+                  <option value="enterprisePlus">vSAN Enterprise Plus</option>
+                </select>
+              </div>
+              <div class="col">
+                <label for="vSANCount">License Count</label>
+                <div class="input-group">
+                  <input type="number" min="1" step="1" id="vSANCount" name="vSANCount" class="form-control" disabled />
+                  <div class="input-group-append">
+                    <div class="input-group-button">
+                      <button type="button" class="btn btn-info" id="calculateVSANCount" disabled>Calculate</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" id="addInfraType" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
   
 </div> <!-- .container#app -->
 
@@ -268,6 +391,9 @@
 
         <script type="text/javascript">
           jQuery(document).ready(function() {
+            
+            //========================================================================================
+            // Vue Initialization
             var app = new Vue({
               el: '#app',
               data: {
@@ -278,12 +404,56 @@
                 manifest: []
               }
             });
+            
+            //========================================================================================
+            // Demo Data Injection
+            jQuery("#demoDataInjection").on('click', function(e) {
+              e.preventDefault();
+              // Reset 
+              //app.infrastructure = [];
+              //app.clustersAndHosts = [];
+              //app.licenses = [];
+              //app.vmsAndWorkloads = [];
+              //app.manifest = [];
+
+              // Infra
+              var curInfraCount = app.infrastructure.length + 1;
+              var infraIndex = app.infrastructure.push({ typeName: 'VMWare vSphere', version: 7, friendlyName: "Nashville DC - " + curInfraCount }) - 1;
+
+              // Clusters
+              app.clustersAndHosts.push({
+                  friendlyName: "Production Cluster " + (infraIndex + 1),
+                  infrastructureProvider: infraIndex,
+                  clusterBaseDNSName: "prod" + (infraIndex + 1) + ".example.com",
+                  hostCount: 24,
+                  hostSocketCount: 2,
+                  hostCoresPerSocketCount: 16,
+                  hostRAM: 256,
+                  storagePools: [
+                    {
+                      poolName: "InfraCorePool",
+                      poolSize: 40000,
+                      poolUsage: 80,
+                    },
+                    {
+                      poolName: "VDIPool",
+                      poolSize: 10000,
+                      poolUsage: 75,
+                    },
+                  ],
+                  totalStorageSize: 50000
+                });
+            });
+            
+            //========================================================================================
             // Infrastructure Type Dropdown Change
             jQuery("#infraTypeDropDown").change(function() {
               var infraType = this.value;
               jQuery(".infraVersionHolder").addClass('d-none');
               jQuery('#infraVersion-' + infraType).removeClass('d-none');
             });
+            
+            //========================================================================================
             // Add Infrastructure Type
             jQuery("#infraModalCenter").on('click', "#addInfraType", function(e) {
               e.preventDefault();
@@ -314,6 +484,8 @@
                 jQuery("#infraModalCenter").modal('hide');
               }
             });
+            
+            //========================================================================================
             // Remove Infrastructure Type Button
             jQuery("#app").on('click', 'button.rmInfra', function(e) {
               e.preventDefault();
@@ -321,7 +493,10 @@
               if (targetIn > -1) {
                 app.infrastructure.splice(targetIn, 1);
               }
+              // TODO: Cascade the deletion of Clusters & Hosts > Licenses > VMs & Workloads
             });
+            
+            //========================================================================================
             // Add Storage Pool Button
             jQuery("#app").on('click', 'button#addStoragePool', function(e) {
               if (jQuery(".clusterStoragePoolsHolder .storagePoolHolders").length) {
@@ -330,17 +505,22 @@
                 clusterStoragePoolCount = (parseInt(clusterStoragePoolCount) + 1);
               }
               else { var clusterStoragePoolCount = 0; }
-              jQuery(".clusterStoragePoolsHolder").append('<div class="storagePoolHolders border-left ml-3 pl-3" id="clusterStoragePoolHolder-' + clusterStoragePoolCount + '"><div class="form-group"><div class="input-group"><input type="text" class="form-control storagePoolName" id="clusterStoragePoolName-' + clusterStoragePoolCount + '" name="clusterStoragePoolName-' + clusterStoragePoolCount + '" placeholder="Pool Name" /><div class="input-group-append"><div class="input-group-button"><button type="button" class="btn btn-danger removePool"><i class="fa fa-trash"></i></button></div></div></div></div><div class="form-group row"><div class="col"><input type="number" class="form-control storagePoolSize" id="clusterStoragePoolSize-' + clusterStoragePoolCount + '" name="clusterStoragePoolSize-' + clusterStoragePoolCount + '" placeholder="Size in GB" /></div><div class="col"><input type="number" class="form-control storagePoolUsage" id="clusterStoragePoolUsage-' + clusterStoragePoolCount + '" name="clusterStoragePoolUsage-' + clusterStoragePoolCount + '" min="0" max="100" placeholder="Usage in %" /></div></div></div>');
+              jQuery(".clusterStoragePoolsHolder").append('<div class="storagePoolHolders border-left ml-3 pl-3" id="clusterStoragePoolHolder-' + clusterStoragePoolCount + '"><div class="form-group"><div class="input-group"><input type="text" class="form-control storagePoolName" id="clusterStoragePoolName-' + clusterStoragePoolCount + '" name="clusterStoragePoolName-' + clusterStoragePoolCount + '" placeholder="Pool Name" /><div class="input-group-append"><div class="input-group-button"><button type="button" class="btn btn-danger removePool"><i class="fa fa-trash"></i></button></div></div></div></div><div class="form-group row"><div class="col"><input type="number" class="form-control storagePoolSize" id="clusterStoragePoolSize-' + clusterStoragePoolCount + '" name="clusterStoragePoolSize-' + clusterStoragePoolCount + '" min="1" step="1" placeholder="Size in GB" /></div><div class="col"><input type="number" class="form-control storagePoolUsage" id="clusterStoragePoolUsage-' + clusterStoragePoolCount + '" name="clusterStoragePoolUsage-' + clusterStoragePoolCount + '" min="0" max="100" placeholder="Usage in %" /></div></div></div>');
             });
+            
+            //========================================================================================
             // Remove Storage Pool Button
             jQuery("#app").on('click', '.storagePoolHolders button.removePool', function(e) {
               jQuery(this).parent().parent().parent().parent().parent().remove();
             });
+
+            //========================================================================================
             // Add Clusters & Host Button
             jQuery("#clustersModalCenter").on('click', "#addClusterAndHosts", function(e) {
               e.preventDefault();
               let validForm = true;
               if (!jQuery("#clusterFriendlyName").val() || !jQuery("#clusterBaseDNSName").val() 
+                  || !jQuery("#clusterInfrastructureID").val()
                   || !jQuery("#clusterHostCount").val()
                   || !jQuery("#clusterHostSocketCount").val()
                   || !jQuery("#clusterHostCoresPerSocketCount").val()
@@ -373,9 +553,9 @@
               });
 
               if (validForm) {
-
                 app.clustersAndHosts.push({
                   friendlyName: jQuery("#clusterFriendlyName").val(),
+                  infrastructureProvider: jQuery("#clusterInfrastructureID").val(),
                   clusterBaseDNSName: jQuery("#clusterBaseDNSName").val(),
                   hostCount: jQuery("#clusterHostCount").val(),
                   hostSocketCount: jQuery("#clusterHostSocketCount").val(),
@@ -388,6 +568,8 @@
                 jQuery("#clustersModalCenter").modal('hide');
               }
             });
+
+            //========================================================================================
             // Remove Cluster and Hosts Button
             jQuery("#app").on('click', 'button.rmCluster', function(e) {
               e.preventDefault();
@@ -396,10 +578,80 @@
                 app.clustersAndHosts.splice(targetIn, 1);
               }
             });
+
+            //========================================================================================
+            // License Cluster Infra Type Detection
+            jQuery("#licensesModalCenter").on('change', '#licenseClusterID', function() {
+              jQuery(".genLicenseHolders").addClass('d-none');
+
+              clusterID = jQuery(this).val();
+              if (clusterID) {
+                cluster = app.clustersAndHosts[clusterID];
+                infra = app.infrastructure[cluster['infrastructureProvider']];
+                switch(infra['typeName']) {
+                  case "VMWare vSphere":
+                    jQuery(".vmWareLicenseHolders").removeClass('d-none');
+                  break;
+                  default:
+                    // Nada really
+                  break;
+                }
+              }
+            });
+
+            //========================================================================================
+            // License vSphere Edition License Count Calculation
+            function calculateVSphereLicenseCount(clusterID = null) {
+              if (!clusterID) {clusterID = jQuery("#licenseClusterID").val(); }
+              if (clusterID) {
+                cluster = app.clustersAndHosts[clusterID];
+                infra = app.infrastructure[cluster['infrastructureProvider']];
+                switch(infra['version']) {
+                  case "7":
+                  case 7:
+                    var vSphereCount = Math.ceil((cluster['hostCount'] * cluster['hostSocketCount'] * cluster['hostCoresPerSocketCount']) / 32);
+                  break;
+                }
+                jQuery("#vSphereCount").val(vSphereCount);
+                return vSphereCount;
+              }
+            }
+            jQuery("#licensesModalCenter").on('click', '#calculateVSphereCount', function(e) {
+              e.preventDefault();
+              calculateVSphereLicenseCount();
+            });
+
+            //========================================================================================
+            // License vCenter License Count Calculation
+            function calculateVCenterLicenseCount(clusterID = null, vCenterEdition = null) {
+              if (!clusterID) {clusterID = jQuery("#licenseClusterID").val(); }
+              if (!vCenterEdition) {vCenterEdition = jQuery("#vCenterEdition").val();}
+              if (clusterID && vCenterEdition) {
+                cluster = app.clustersAndHosts[clusterID];
+                infra = app.infrastructure[cluster['infrastructureProvider']];
+                switch(vCenterEdition) {
+                  case "standard":
+                    var vCenterCount = Math.ceil(cluster['hostCount'] / 2000);
+                  break;
+                  case "foundation":
+                    var vCenterCount = Math.ceil(cluster['hostCount'] / 4);
+                  break;
+                }
+                jQuery("#vCenterCount").val(vCenterCount);
+                return vCenterCount;
+              }
+            }
+            jQuery("#licensesModalCenter").on('click', '#calculateVCenterCount', function(e) {
+              e.preventDefault();
+              calculateVCenterLicenseCount();
+            });
+            
+            //========================================================================================
             // Disable default submits on subforms
-            jQuery("#addClusterForm, #addInfraForm").on('submit', function(e) {
+            jQuery("#addClusterForm, #addInfraForm, #addLicenseForm").on('submit', function(e) {
               e.preventDefault();
             });
+
           });
         </script>
     </body>
