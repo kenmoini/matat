@@ -402,6 +402,141 @@
       </div>
     </div>
   </div>
+
+  <!-- Add VMs and Workloads Modal -->
+  <div class="modal fade" id="vmWorkloadsModalCenter" tabindex="-1" role="dialog" aria-labelledby="vmWorkloadsModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="vmWorkloadsModalCenterTitle">Add VMs and Workloads</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="addVMWorkloadsForm" name="addVMWorkloadsForm" method="POST" action="">
+            <!-- Cluster Selection -->
+            <div class="form-group">
+              <label for="vmWorkloadClusterID">Cluster</label>
+              <select id="vmWorkloadClusterID" name="vmWorkloadClusterID" class="form-control">
+                <option value="">Select a cluster...</option>
+                <option v-for="(cluster, index) in clustersAndHosts" :value="index">
+                  @{{ cluster.friendlyName }}
+                </option>
+              </select>
+            </div>
+            <!-- Name -->
+            <div class="form-group">
+              <label for="vmWorkloadName">VM Name</label>
+              <input type="text" id="vmWorkloadName" name="vmWorkloadName" />
+            </div>
+            <!-- Sockets -->
+            <div class="form-group">
+              <label for="vmWorkloadSocketCount">VM Socket Count</label>
+              <input type="number" min="1" step="1" id="vmWorkloadSocketCount" name="vmWorkloadSocketCount" />
+            </div>
+            <!-- Cores per socket -->
+            <div class="form-group">
+              <label for="vmWorkloadCoreCount">VM Core Count Per Socket</label>
+              <input type="number" min="1" step="1" id="vmWorkloadCoreCount" name="vmWorkloadCoreCount" />
+            </div>
+            <!-- RAM -->
+            <div class="form-group">
+              <label for="vmWorkloadRAM">VM RAM in GB</label>
+              <input type="number" min="1" step="1" id="vmWorkloadRAM" name="vmWorkloadRAM" />
+            </div>
+            <!-- OS -->
+            <div class="form-group">
+              <label for="vmWorkloadClusterID">Cluster</label>
+              <select id="vmWorkloadClusterID" name="vmWorkloadClusterID" class="form-control">
+                <option value="">Select a cluster...</option>
+                <option v-for="(cluster, index) in clustersAndHosts" :value="index">
+                  @{{ cluster.friendlyName }}
+                </option>
+              </select>
+            </div>
+            <!-- Disks -->
+            <!-- NICs (qty) -->
+            <!-- VM Qty -->
+          <!--
+            {
+          "id": 1000000000004,
+          "name": "RHEL7.8MigrationTest",
+          "description": null,
+          "type": "ManageIQ::Providers::Vmware::InfraManager::Vm",
+          "uid_ems": "42266ee7-3b41-5d78-cce6-e3c197b9011c",
+          "last_scan_on": null,
+          "cpu_cores_per_socket": 1,
+          "cpu_total_cores": 1,
+          "allocated_disk_storage": 64424509440,
+          "used_disk_storage": 64424509440,
+          "thin_provisioned": true,
+          "disks_aligned": "Unknown",
+          "ems_ref": "vm-1015",
+          "has_rdm_disk": false,
+          "cpu_affinity": null,
+          "memory_hot_add_enabled": false,
+          "cpu_hot_add_enabled": false,
+          "cpu_hot_remove_enabled": false,
+          "host": {
+            "ems_ref": "host-1008"
+          },
+          "power_state": "on",
+          "ram_size_in_bytes": 2147483648,
+          "retired": null,
+          "v_datastore_path": "VMDataStore/RHEL7.8MigrationTest/RHEL7.8MigrationTest.vmx",
+          "operating_system": {
+            "product_type": null,
+            "product_name": "Red Hat Enterprise Linux 7 (64-bit)",
+            "distribution": null
+          },
+          "hardware": {
+            "id": 1000000000005,
+            "guest_os_full_name": "Red Hat Enterprise Linux 7 (64-bit)",
+            "disks": [
+              {
+                "id": 1000000000022,
+                "device_name": "Hard disk 1",
+                "device_type": "disk",
+                "disk_type": "thin",
+                "filename": "[VMDataStore] RHEL7.8MigrationTest/RHEL7.8MigrationTest.vmdk",
+                "free_space": null,
+                "mode": "persistent",
+                "size": 64424509440,
+                "size_on_disk": null
+              }
+            ],
+            "nics": [
+              {
+                "id": 1000000000011,
+                "device_name": "Network adapter 1",
+                "device_type": "ethernet",
+                "address": "00:50:56:a6:d4:e3",
+                "model": "VirtualVmxnet3",
+                "uid_ems": "00:50:56:a6:d4:e3",
+                "network": {
+                  "id": 1000000000005,
+                  "ipaddress": "192.168.42.174",
+                  "hostname": "localhost.localdomain"
+                }
+              }
+            ]
+          },
+          "files": [],
+          "system_services": []
+        },
+
+      -->
+            
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" id="addWorkloads" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
   
 
   
@@ -737,7 +872,6 @@
                 validForm = false;
               }
               else {
-
                 let clusterID = jQuery("#licenseClusterID").val();
                 cluster = app.clustersAndHosts[clusterID];
                 infra = app.infrastructure[cluster['infrastructureProvider']];
@@ -762,13 +896,14 @@
                   break;
                 }
                 jQuery("#addLicenseForm").trigger("reset");
+                jQuery(".genLicenseHolders").addClass('d-none');
                 jQuery("#licensesModalCenter").modal('hide');
               }
             });
             
             //========================================================================================
             // Disable default submits on subforms
-            jQuery("#addClusterForm, #addInfraForm, #addLicenseForm").on('submit', function(e) {
+            jQuery("#addClusterForm, #addInfraForm, #addLicenseForm, #addVMWorkloadsForm").on('submit', function(e) {
               e.preventDefault();
             });
 
